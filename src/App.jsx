@@ -3,6 +3,13 @@ import { useAuth } from './auth.jsx';
 import Layout from './components/Layout.jsx';
 import Home from './pages/public/Home.jsx';
 import { Privacy, Terms } from './pages/public/Legal.jsx';
+import Platform from './pages/public/Platform.jsx';
+import Solutions from './pages/public/Solutions.jsx';
+import PublicPricing from './pages/public/Pricing.jsx';
+import Partners from './pages/public/Partners.jsx';
+import Resources from './pages/public/Resources.jsx';
+import About from './pages/public/About.jsx';
+import Contact from './pages/public/Contact.jsx';
 import Login from './pages/Login.jsx';
 import ChangePassword from './pages/ChangePassword.jsx';
 import AuditLog from './pages/AuditLog.jsx';
@@ -36,6 +43,13 @@ export default function App() {
     return (
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/platform" element={<Platform />} />
+        <Route path="/solutions" element={<Solutions />} />
+        <Route path="/pricing" element={<PublicPricing />} />
+        <Route path="/partners" element={<Partners />} />
+        <Route path="/resources" element={<Resources />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/contact" element={<Contact />} />
         <Route path="/login" element={<Login />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/terms" element={<Terms />} />

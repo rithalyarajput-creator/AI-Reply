@@ -8,8 +8,11 @@ Live stack: React 18 + Vite on Vercel, one serverless API function, Neon Postgre
 
 ## What is in it
 
-### Public website (`/`)
-Landing page (features, how it works, plans pulled from your database, FAQ), a contact form that saves to **Website Leads**, `/privacy` and `/terms`.
+### Public website
+Pages: `/` Home, `/platform`, `/solutions`, `/pricing` (plans pulled from your database), `/partners`, `/resources`,
+`/about`, `/contact` (Book a demo), `/privacy`, `/terms`, `/login`. Demo and partner forms save to **Website Leads**.
+Contact phone, email and a WhatsApp chat button appear only when `VITE_CONTACT_PHONE`, `VITE_CONTACT_EMAIL` and
+`VITE_WHATSAPP_NUMBER` are set. The site makes no partner badges, customer logos or numbers it cannot back up.
 
 ### Super Admin and staff
 | Menu | What it does |

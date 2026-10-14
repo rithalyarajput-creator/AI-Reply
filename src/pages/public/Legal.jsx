@@ -1,28 +1,20 @@
 import { Link } from 'react-router-dom';
+import { SiteLayout } from './SiteLayout.jsx';
 
 const CONTACT = import.meta.env.VITE_CONTACT_EMAIL || '';
 
 function Page({ title, inApp, children }) {
-  return (
-    <div className={inApp ? '' : 'site'}>
-      {!inApp && (
-        <header className="site-nav">
-          <div className="site-wrap nav-in">
-            <Link to="/" className="logo">AI Reply</Link>
-            <nav><Link to="/login" className="btn small">Login</Link></nav>
-          </div>
-        </header>
-      )}
-      <div className="site-wrap narrow legal">
-        <h1>{title}</h1>
-        <p className="muted small">Last updated: 14 October 2026</p>
-        {children}
-        <p>
-          Questions: {CONTACT ? <a href={`mailto:${CONTACT}`}>{CONTACT}</a> : 'use the contact form on our home page'}.
-        </p>
-      </div>
+  const body = (
+    <div className="site-wrap narrow legal">
+      <h1>{title}</h1>
+      <p className="muted small">Last updated: 14 October 2026</p>
+      {children}
+      <p>
+        Questions: {CONTACT ? <a href={`mailto:${CONTACT}`}>{CONTACT}</a> : <Link to="/contact">use our contact form</Link>}.
+      </p>
     </div>
   );
+  return inApp ? body : <SiteLayout>{body}</SiteLayout>;
 }
 
 export function Privacy({ inApp }) {

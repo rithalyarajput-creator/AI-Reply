@@ -5,6 +5,7 @@ import App from './App.jsx';
 import { AuthProvider } from './auth.jsx';
 import './styles.css';
 import './portal.css';
+import './ux.css';
 
 createRoot(document.getElementById('root')).render(
   <React.StrictMode>

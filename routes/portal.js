@@ -30,8 +30,11 @@ on('GET', '/portal/dashboard', inClient, async (ctx) => {
   const mine = user.role === 'agent' ? user.id : null;
   const [s] = await q(`SELECT
     (SELECT count(*) FROM users WHERE client_id = $1 AND role IN ('client_admin','agent_head','agent') AND status = 'active')::int AS users,
-    (SELECT count(*) FROM messages WHERE client_id = $1)::int AS messages,
+    (SELECT count(*) FROM users WHERE client_id = $1 AND role IN ('client_admin','agent_head','agent') AND status = 'disabled')::int AS users_disabled,
+    (SELECT count(*) FROM messages WHERE client_id = $1 AND direction IN ('in','out'))::int AS messages,
     (SELECT count(*) FROM messages WHERE client_id = $1 AND direction = 'in')::int AS inbound,
+    (SELECT count(*) FROM messages WHERE client_id = $1 AND direction = 'out')::int AS outbound,
+    (SELECT count(*) FROM conversations WHERE client_id = $1 AND status = 'live' AND unread = 0 AND ($2::uuid IS NULL OR agent_id = $2))::int AS replied,
     (SELECT count(*) FROM conversations WHERE client_id = $1 AND status = 'live' AND ($2::uuid IS NULL OR agent_id = $2))::int AS live_chats,
     (SELECT count(*) FROM conversations WHERE client_id = $1 AND status = 'live' AND unread > 0 AND ($2::uuid IS NULL OR agent_id = $2))::int AS unreplied,
     (SELECT count(*) FROM contacts WHERE client_id = $1 AND ($2::uuid IS NULL OR agent_id = $2))::int AS leads`,
@@ -45,12 +48,16 @@ on('GET', '/portal/dashboard', inClient, async (ctx) => {
             count(*) FILTER (WHERE m.status = 'failed')::int AS failed
      FROM campaigns c LEFT JOIN campaign_messages m ON m.campaign_id = c.id
      WHERE c.client_id = $1 GROUP BY c.id ORDER BY c.created_at DESC LIMIT 1`, [c.id]);
-  const [rt] = await q(
-    `SELECT avg(extract(epoch FROM (o.created_at - i.created_at)))::float AS secs
+  const rtRows = await q(
+    `SELECT o.is_bot, avg(extract(epoch FROM (o.created_at - i.created_at)))::float AS secs
      FROM messages i JOIN LATERAL (
-       SELECT created_at FROM messages o WHERE o.conversation_id = i.conversation_id AND o.direction = 'out'
+       SELECT created_at, is_bot FROM messages o WHERE o.conversation_id = i.conversation_id AND o.direction = 'out'
          AND o.created_at > i.created_at ORDER BY o.created_at LIMIT 1) o ON true
-     WHERE i.client_id = $1 AND i.direction = 'in' AND i.created_at > now() - interval '30 days'`, [c.id]);
+     WHERE i.client_id = $1 AND i.direction = 'in' AND i.created_at > now() - interval '30 days'
+     GROUP BY o.is_bot`, [c.id]);
+  const botSecs = rtRows.find((r) => r.is_bot)?.secs ?? null;
+  const humanSecs = rtRows.find((r) => !r.is_bot)?.secs ?? null;
+  const allSecs = rtRows.length ? rtRows.reduce((s, r) => s + r.secs, 0) / rtRows.length : null;
   const ch = await q(
     `SELECT id, display_name, status, tier, quality_rating, verification FROM channels WHERE client_id = $1`, [c.id]);
   const [setup] = await q(`SELECT
@@ -62,7 +69,9 @@ on('GET', '/portal/dashboard', inClient, async (ctx) => {
   const [bal] = await q('SELECT wallet_balance, low_balance_alert, company_name FROM clients WHERE id = $1', [c.id]);
   return {
     company: bal.company_name, stats: s, last_campaign: last || null,
-    avg_response_seconds: rt?.secs ? Math.round(rt.secs) : null,
+    avg_response_seconds: allSecs === null ? null : Math.round(allSecs),
+    response_bot_seconds: botSecs === null ? null : Math.round(botSecs),
+    response_human_seconds: humanSecs === null ? null : Math.round(humanSecs),
     channels: ch, setup, wallet_balance: Number(bal.wallet_balance),
     low_balance: Number(bal.wallet_balance) < Number(bal.low_balance_alert),
   };
