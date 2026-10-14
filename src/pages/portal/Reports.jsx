@@ -26,9 +26,9 @@ function Analytics() {
               <h3>Campaign delivery</h3>
               <Bars max={f.total || 1} rows={[
                 { label: 'Total', value: f.total, color: '#94a3b8' },
-                { label: 'Sent', value: f.sent, color: '#3b82f6' },
-                { label: 'Delivered', value: f.delivered, color: '#16a34a' },
-                { label: 'Seen', value: f.seen, color: '#0ea5a4' },
+                { label: 'Sent', value: f.sent, color: '#6FB3B8' },
+                { label: 'Delivered', value: f.delivered, color: '#388087' },
+                { label: 'Seen', value: f.seen, color: '#2a5f66' },
                 { label: 'Failed', value: f.failed, color: '#dc2626' },
               ]} />
             </div>
@@ -42,7 +42,7 @@ function Analytics() {
           </div>
           <div className="card">
             <h3>Messages per day</h3>
-            <Columns data={d.daily} keys={[{ key: 'sent', label: 'Sent', color: '#16a34a' }, { key: 'received', label: 'Received', color: '#3b82f6' }]} />
+            <Columns data={d.daily} keys={[{ key: 'sent', label: 'Sent', color: '#388087' }, { key: 'received', label: 'Received', color: '#6FB3B8' }]} />
           </div>
           <div className="card table-wrap"><h3 className="pad">Agents</h3><table>
             <thead><tr><th>Agent</th><th>Role</th><th>Contacts</th><th>Replies</th></tr></thead>
@@ -109,7 +109,7 @@ function BotReport() {
             <div className="card stat"><div className="muted small">Conversations</div><div className="big">{d.conversations}</div></div>
           </div>
           <div className="card"><h3>Bot replies per day</h3>
-            <Columns data={d.daily.map((x) => ({ day: x.day, replies: x.replies }))} keys={[{ key: 'replies', label: 'Replies', color: '#0ea5a4' }]} />
+            <Columns data={d.daily.map((x) => ({ day: x.day, replies: x.replies }))} keys={[{ key: 'replies', label: 'Replies', color: '#2a5f66' }]} />
           </div>
         </>
       )}

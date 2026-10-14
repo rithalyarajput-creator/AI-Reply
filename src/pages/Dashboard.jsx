@@ -116,9 +116,9 @@ function ClientPortal() {
           {lc ? (
             <Bars rows={[
               { label: 'Pending', value: lc.pending, color: '#94a3b8' },
-              { label: 'Sent', value: lc.sent, color: '#3b82f6' },
-              { label: 'Delivered', value: lc.delivered, color: '#16a34a' },
-              { label: 'Seen', value: lc.seen, color: '#0ea5a4' },
+              { label: 'Sent', value: lc.sent, color: '#6FB3B8' },
+              { label: 'Delivered', value: lc.delivered, color: '#388087' },
+              { label: 'Seen', value: lc.seen, color: '#2a5f66' },
               { label: 'Failed', value: lc.failed, color: '#dc2626' },
             ]} max={lc.total || undefined} />
           ) : <p className="muted">No campaign yet.</p>}

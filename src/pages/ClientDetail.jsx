@@ -223,7 +223,7 @@ export default function ClientDetail() {
       )}
       {tab === 'usage' && extra && (
         <div className="card"><h3>Messages sent, last 30 days</h3>
-          <Columns data={extra.usage.map((u) => ({ day: u.day, messages: u.messages }))} keys={[{ key: 'messages', label: 'Messages', color: '#16a34a' }]} />
+          <Columns data={extra.usage.map((u) => ({ day: u.day, messages: u.messages }))} keys={[{ key: 'messages', label: 'Messages', color: '#388087' }]} />
         </div>
       )}
       {tab === 'billing' && extra?.ledger && (

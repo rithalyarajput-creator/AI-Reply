@@ -160,7 +160,7 @@ on('POST', '/portal/labels', adminOnly, async (ctx) => {
   const c = await portalClient(ctx);
   const name = str(ctx.body.name, 40);
   need(name, 'Label name is required');
-  const color = /^#[0-9a-fA-F]{6}$/.test(ctx.body.color || '') ? ctx.body.color : '#16a34a';
+  const color = /^#[0-9a-fA-F]{6}$/.test(ctx.body.color || '') ? ctx.body.color : '#388087';
   const [dup] = await q('SELECT 1 FROM labels WHERE client_id = $1 AND lower(name) = lower($2)', [c.id, name]);
   need(!dup, 'A label with this name already exists', 409);
   const [l] = await q('INSERT INTO labels (client_id, name, color) VALUES ($1,$2,$3) RETURNING *', [c.id, name, color]);

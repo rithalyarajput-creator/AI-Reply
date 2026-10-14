@@ -122,7 +122,7 @@ function Agents() {
 
 function Labels() {
   const [d, load, error] = useLoad(() => api('/portal/labels'), []);
-  const [f, setF] = useState({ name: '', color: '#16a34a' });
+  const [f, setF] = useState({ name: '', color: '#388087' });
   const [q, setQ] = useState('');
   const [err2, setErr2] = useState('');
   const add = async (e) => {
