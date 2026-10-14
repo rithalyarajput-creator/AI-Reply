@@ -2,17 +2,19 @@ import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api.js';
 import { useAuth } from '../auth.jsx';
 import { ROLE_LABEL } from './Layout.jsx';
-import { Badge, Credentials, Field, Modal, fmtDate } from './ui.jsx';
+import {
+  Badge, Credentials, Err, Field, Modal, fmtDate,
+} from './ui.jsx';
 
+const FULL = ['client_admin', 'agent_head', 'agent'];
 const MANAGEABLE = {
-  super_admin: ['client_admin', 'agent_head', 'agent'],
-  agency_admin: ['client_admin', 'agent_head', 'agent'],
+  super_admin: FULL,
+  staff_sales: FULL,
+  agency_admin: FULL,
   client_admin: ['agent_head', 'agent'],
 };
 
-function AddUser({ clientId, onClose, onCreated }) {
-  const { user } = useAuth();
-  const roles = MANAGEABLE[user.role];
+function AddUser({ clientId, roles, onClose, onCreated }) {
   const [f, setF] = useState({ name: '', email: '', mobile: '', role: roles.includes('agent') ? 'agent' : roles[0] });
   const [error, setError] = useState('');
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
@@ -39,7 +41,7 @@ function AddUser({ clientId, onClose, onCreated }) {
             {roles.map((r) => <option key={r} value={r}>{ROLE_LABEL[r]}</option>)}
           </select>
         </Field>
-        {error && <div className="error">{error}</div>}
+        <Err error={error} />
         <div className="row">
           <button className="btn">Create user</button>
           <button type="button" className="btn ghost" onClick={onClose}>Cancel</button>
@@ -49,23 +51,25 @@ function AddUser({ clientId, onClose, onCreated }) {
   );
 }
 
-// Users of one client. clientId is required for Super Admin / Agency; Client Admin uses own client.
+// Users of one client. Platform staff and agencies pass clientId (or view a client through scope);
+// a Client Admin always sees only their own company.
 export default function UsersPanel({ clientId }) {
-  const { user: me } = useAuth();
+  const { user: me, scope } = useAuth();
+  const effective = clientId || scope?.id;
+  const roles = MANAGEABLE[me.role] || [];
   const [users, setUsers] = useState(null);
   const [adding, setAdding] = useState(false);
   const [creds, setCreds] = useState(null);
   const [error, setError] = useState('');
 
   const load = useCallback(() => {
-    api('/users', { query: { client_id: clientId } })
-      .then((d) => setUsers(d.users))
+    api('/users', { query: { client_id: effective } })
+      .then((d) => setUsers(d.users.filter((u) => u.role !== 'agency_admin')))
       .catch((e) => setError(e.message));
-  }, [clientId]);
+  }, [effective]);
   useEffect(load, [load]);
 
-  const canManage = (u) =>
-    u.id !== me.id && (MANAGEABLE[me.role] || []).includes(u.role);
+  const canManage = (u) => u.id !== me.id && roles.includes(u.role);
 
   const toggle = async (u) => {
     setError('');
@@ -87,13 +91,13 @@ export default function UsersPanel({ clientId }) {
     <>
       <div className="head">
         <h3>Users</h3>
-        <button className="btn" onClick={() => setAdding(true)}>Add user</button>
+        {roles.length > 0 && <button className="btn" onClick={() => setAdding(true)}>Add user</button>}
       </div>
-      {error && <div className="error">{error}</div>}
+      <Err error={error} />
       <div className="card table-wrap">
         <table>
           <thead>
-            <tr><th>Name</th><th>Login email</th><th>Role</th><th>Status</th><th>Last login</th><th /></tr>
+            <tr><th>Name</th><th>Login email</th><th>Role</th><th>Status</th><th>Contacts</th><th>Last login</th><th /></tr>
           </thead>
           <tbody>
             {users?.map((u) => (
@@ -102,6 +106,7 @@ export default function UsersPanel({ clientId }) {
                 <td>{u.email}</td>
                 <td>{ROLE_LABEL[u.role]}</td>
                 <td><Badge value={u.status} /></td>
+                <td>{u.total_contacts ?? 0}</td>
                 <td>{fmtDate(u.last_login_at)}</td>
                 <td className="actions">
                   {canManage(u) && (
@@ -113,14 +118,15 @@ export default function UsersPanel({ clientId }) {
                 </td>
               </tr>
             ))}
-            {users && !users.length && <tr><td colSpan="6" className="muted">No users yet.</td></tr>}
-            {!users && <tr><td colSpan="6" className="muted">Loading...</td></tr>}
+            {users && !users.length && <tr><td colSpan="7" className="muted">No users yet.</td></tr>}
+            {!users && <tr><td colSpan="7" className="muted">Loading...</td></tr>}
           </tbody>
         </table>
       </div>
       {adding && (
         <AddUser
-          clientId={clientId}
+          clientId={effective}
+          roles={roles}
           onClose={() => setAdding(false)}
           onCreated={(c) => { setAdding(false); setCreds({ ...c, title: 'User login created' }); load(); }}
         />

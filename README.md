@@ -1,159 +1,135 @@
 # AI Reply
 
-Multi-tenant WhatsApp automation and CRM platform. One software, many client companies, each with its own isolated data, agents and logins.
+Multi-tenant WhatsApp automation and CRM platform. One software, many client companies, each with isolated data, agents and logins. Built on the official WhatsApp Business API (Meta Cloud API).
 
-**Status: Phase 1 (accounts and roles).** WhatsApp connection, inbox, templates and campaigns come in the next phases.
+Live stack: React 18 + Vite on Vercel, one serverless API function, Neon PostgreSQL.
 
 ---
 
-## What it does
+## What is in it
 
-| Role | Who | What they can do |
-|---|---|---|
-| **Super Admin** | The platform owner | See every client, create agencies and clients, set plans, suspend/close accounts, open a client's portal for support ("Login as client"), see the full audit log |
-| **Agency Admin** | An agency that manages many clients | Create and manage its own clients and their users, suspend/activate its clients |
-| **Client Admin** | The owner of one company | Create and manage logins for their own agent heads and agents, reset passwords, disable users |
-| **Agent Head / Agent** | Client's employees | Log in to their portal (inbox arrives in Phase 2) |
+### Public website (`/`)
+Landing page (features, how it works, plans pulled from your database, FAQ), a contact form that saves to **Website Leads**, `/privacy` and `/terms`.
+
+### Super Admin and staff
+| Menu | What it does |
+|---|---|
+| Dashboard | Clients, failure %, messages, low-balance clients, onboarding in progress, monthly recharge / Meta cost / gross margin |
+| Clients and Client Detail | Add, edit, suspend, close; tabs for Overview, Profile, Users, Channels, Templates, Campaigns, Usage, Billing, Pricing (custom rates), API, Notes, Activity; "Login as client" (audited) |
+| Channels | Every client's numbers with tier, quality, verification, webhook status and an onboarding tracker (numbers masked) |
+| Plans and Pricing | Plans, per-category Meta cost + your markup, client rate |
+| Wallet and Billing | Ledger, manual credit/debit with mandatory reason, invoices, balances, low-balance list |
+| Staff and Roles | Support, Sales, Billing, Developer logins with a permission matrix |
+| Website Leads | Enquiries from the public site |
+| Agencies, Audit Log | Agency accounts; every sensitive action |
+
+### Agency
+Own clients (create, suspend, view detail), their users and audit log.
+
+### Client portal (mirrors the Anantya.ai admin guide)
+| Menu | What it does |
+|---|---|
+| Dashboard | Users, messages, live chats, response time, last campaign, WhatsApp status, setup checklist, wallet |
+| Team Inbox | Live / History, search, assign and transfer, internal notes, 24-hour window handling with template fallback, new message |
+| Reports | Analytics (delivery funnel, per day, agents, failure reasons), Short URL with click counts, Bot Report |
+| Templates | Create with variables and buttons, submit to Meta, sync status |
+| Campaigns | Template to a label or all contacts, wallet check, live progress, per-contact report CSV, auto refund on failures |
+| Automations | Keyword reply, Welcome, Out of office, AI Bot, Auto assign, Opt-out, Quick reply, Feedback, Icebreaker, Keyword alerts |
+| Setup (Flows) | Tap-to-choose button menus (up to 3 options per step) |
+| Integrations | Your Channel (connect number), Marketplace, API Key (+ history), API Docs, Custom webhook |
+| Workflows | New contact / keyword / any message, then send text, add label, assign agent; execution logs |
+| Leads | Search, label and agent filters, add, CSV import and download, assign |
+| Wallet | Balance, rates, transactions, invoices |
+| Configurations | Personal (profile, notifications), Agents (create, percentage distribution, transfer), Labels |
+
+Agent Head and Agent see a reduced menu; an Agent only sees chats and leads assigned to them.
 
 ```
-Super Admin
+Super Admin / Staff
    └── Agency (optional)
           └── Client (company)
                  └── Client Admin
                         └── Agent Head / Agent
 ```
 
-Clients can also be created directly under the Super Admin, without an agency.
-
-### Phase 1 features
-
-- Email + password login (JWT), bcrypt-hashed passwords
-- Temporary passwords are generated, shown once, and must be changed at first login
-- Super Admin: clients list (search, status filter), add client, client detail (overview, profile, users, activity), agencies, plans
-- Suspend / activate / close client (reason is mandatory) - suspended clients cannot log in
-- "Login as client" for support, always written to the audit log, expires in 30 minutes
-- Per-role data scoping on the server (an agency only sees its own clients, a client admin only its own company)
-- Audit log of logins, user changes, status changes and support access
-
-### Roadmap
-
-| Phase | Scope |
-|---|---|
-| 1 (this) | Auth, roles, agencies, clients, users, plans, audit log |
-| 2 | WhatsApp Cloud API connection (Meta Embedded Signup), webhooks, Team Inbox, 24-hour window handling |
-| 3 | Templates, bulk campaigns, delivery reports, prepaid wallet and billing |
-| 4 | Automations (keyword reply, welcome, out-of-office, bots), Instagram and Facebook |
-
----
-
-## Tech stack
-
-| Layer | Technology |
-|---|---|
-| Frontend | React 18 + Vite, React Router v6 |
-| Backend | Vercel serverless function (`api/index.js`, one entry point with an internal router) |
-| Database | Neon PostgreSQL (`@neondatabase/serverless`) |
-| Auth | JWT (`jsonwebtoken`) + `bcryptjs` |
-| Hosting | Vercel |
-
-## Project structure
-
-```
-api/index.js         All API routes, auth and role checks
-lib/core.js          DB client, JWT, hashing, validation, audit helper
-db/schema.sql        Database tables
-scripts/migrate.mjs  Creates tables and the first Super Admin
-src/                 React app (pages, components, auth, api client)
-vercel.json          Routes /api/* to the function and everything else to the SPA
-```
-
 ---
 
 ## Setup
 
-### 1. Database (Neon)
+### 1. Database and environment
+1. Create a Neon database and copy the connection string.
+2. Copy `.env.example` to `.env` and fill it in. On Vercel, add the same variables under **Settings, Environment Variables**.
 
-1. Create a project at [neon.tech](https://neon.tech) (free tier is enough to start).
-2. Copy the connection string (it looks like `postgresql://...?sslmode=require`).
-
-### 2. Environment variables
-
-Copy `.env.example` to `.env` for local use. On Vercel, add the same variables under **Project Settings, Environment Variables**.
-
-| Variable | Purpose |
+| Variable | Needed for |
 |---|---|
-| `DATABASE_URL` | Neon connection string |
-| `JWT_SECRET` | Long random string for signing tokens (never reuse across projects) |
-| `SUPER_ADMIN_EMAIL`, `SUPER_ADMIN_PASSWORD`, `SUPER_ADMIN_NAME` | Used only by the migrate script to create the first Super Admin |
+| `DATABASE_URL`, `JWT_SECRET` | Everything |
+| `SUPER_ADMIN_EMAIL`, `SUPER_ADMIN_PASSWORD` | First Super Admin (migrate script only) |
+| `META_APP_SECRET`, `META_VERIFY_TOKEN` | Receiving WhatsApp messages and delivery status |
+| `ANTHROPIC_API_KEY` | AI Bot automation (optional) |
+| `ENCRYPTION_KEY` | Separate key for channel tokens (optional) |
+| `VITE_CONTACT_EMAIL` | Shown on Privacy and Terms (optional) |
 
-Generate a secret:
-
-```bash
-node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
-```
-
-### 3. Create tables and the first Super Admin
-
+### 2. Create or upgrade the tables
 ```bash
 npm install
-npm run migrate        # reads .env; safe to re-run
+npm run migrate        # safe to re-run; upgrades an existing database in place
 ```
 
-If your Node version does not load `.env` automatically: `node --env-file=.env scripts/migrate.mjs`.
-
-### 4. Run locally
-
+### 3. Run locally
 ```bash
 npm i -g vercel
-vercel dev             # serves the React app and /api together on http://localhost:3000
+vercel dev             # React app and /api together on http://localhost:3000
 ```
 
-### 5. Deploy
-
-1. Push this repo to GitHub and import it in Vercel (framework preset: Vite).
-2. Add the environment variables.
-3. Add your domain under **Settings, Domains** and point the DNS records Vercel shows you.
+### 4. Deploy
+Push to GitHub, import in Vercel (preset Vite), add the variables, add your domain.
 
 ---
 
-## API overview
+## Connecting WhatsApp
 
-All routes are under `/api` and need `Authorization: Bearer <token>` except login.
+1. In the Meta developer dashboard create an app with the **WhatsApp** product. Use Meta's free test number first.
+2. Set the webhook: Callback URL `https://YOUR-DOMAIN/api/webhooks/whatsapp`, Verify token = your `META_VERIFY_TOKEN`, subscribe to **messages**.
+3. As a Client Admin open **Integrations, Your Channel, Connect WhatsApp number** and enter the Phone Number ID, WhatsApp Business Account ID and a permanent access token. The details are checked with Meta, and the token is stored encrypted.
+4. Create a template, wait for approval (use **Sync from Meta**), then run a campaign.
 
-| Method | Route | Roles | Purpose |
-|---|---|---|---|
-| POST | `/auth/login` | public | Log in |
-| GET | `/auth/me` | any | Current user |
-| POST | `/auth/change-password` | any | Change own password |
-| GET | `/stats` | any | Dashboard numbers for the caller's scope |
-| GET/POST | `/plans` | super_admin (POST), super/agency (GET) | Plans |
-| GET/POST | `/agencies` | super_admin | Agencies (creating one also creates its admin login) |
-| PATCH | `/agencies/:id` | super_admin | Suspend / activate |
-| GET/POST | `/clients` | super_admin, agency_admin | List / create (creating one also creates its Client Admin login) |
-| GET/PATCH | `/clients/:id` | super, agency, client admin (GET own) | Detail / edit profile |
-| POST | `/clients/:id/status` | super, agency | trial, active, suspended, closed (reason required to suspend/close) |
-| POST | `/clients/:id/impersonate` | super_admin | Login as client (audited) |
-| GET/POST | `/users` | super, agency, client admin | List / create users |
-| PATCH | `/users/:id` | super, agency, client admin | Edit name, mobile, role, status |
-| POST | `/users/:id/reset-password` | super, agency, client admin | New temporary password |
-| GET | `/audit` | super, agency, client admin | Latest 200 audit entries in scope |
+Real customers' numbers need your business to be Meta-verified and (to onboard customers through a sign-up flow) Meta Tech Provider approval. Until then, connect numbers manually as above.
 
-## Security notes
+## Public API
 
-- Passwords are stored as bcrypt hashes. The app never stores or shows an existing password; it can only generate a new temporary one.
-- Every tenant table carries `client_id` / `agency_id`, and every query is filtered by the caller's scope on the server. The UI hiding a button is never the only protection.
-- Secrets live only in environment variables. `.env` is git-ignored.
-- Account status is re-checked on every request, so disabling a user or suspending a client takes effect immediately.
-- Not yet in Phase 1: login rate limiting, email delivery of credentials, 2FA. Add rate limiting (for example Vercel Firewall or Upstash) before going live with real customers.
+Header `X-Api-Key: <key from Integrations, API Key>`.
 
-## WhatsApp (Phase 2 preview)
+| Method | Path | Purpose |
+|---|---|---|
+| GET | `/api/v1/templates` | Templates |
+| POST | `/api/v1/send-template` | `{ "to": "9198...", "template_name": "x", "variables": ["a"] }` |
+| GET | `/api/v1/contacts?page=1&limit=100` | Contacts |
+| POST | `/api/v1/contact-exists` | `{ "phone": "9198..." }` |
+| GET | `/api/v1/campaigns`, `/api/v1/campaigns/:id` | Campaigns and delivery counts |
 
-The platform will use the official WhatsApp Business API (Meta Cloud API), not QR-scan tools, so customer numbers are not at risk of random bans.
+---
 
-What is needed from your side, before real numbers can be connected:
+## Security
 
-1. A registered business (Udyam, GST or equivalent) and a website with Privacy Policy / Terms pages
-2. A Meta Developer account and app, plus business verification
-3. Meta App Review to become a Tech Provider (needed for Embedded Signup)
+- Passwords: bcrypt hashes. Existing passwords can never be shown; only a new temporary one can be generated.
+- Channel tokens and webhook trust: tokens are AES-256-GCM encrypted; webhooks are accepted only with a valid Meta signature.
+- API keys: only a SHA-256 hash is stored; the key is shown once.
+- Tenant isolation: every query is scoped by the caller's client or agency on the server.
+- Account status is re-checked on every request; suspending a client blocks its users immediately.
+- Staff permissions are enforced on the server (see Staff and Roles for the matrix).
 
-Until then, development can use Meta's free test number. Meta's rules and prices change; check the official pages before pricing your plans.
+## Known limits (be aware before going live)
+
+- **Campaign sending is driven from the browser.** The page must stay open while a campaign sends (it sends in small batches and can be paused/resumed). Very large lists need a background worker or queue.
+- No payment gateway yet: wallet recharges are entered manually by billing staff.
+- No two-factor login, and no login rate limiting. Add Vercel Firewall / Upstash rate limiting before onboarding real customers.
+- Instagram, Facebook, SMS, RCS and the third-party marketplace tools are shown as "Coming soon".
+- Only free-text, reply buttons and basic templates are supported (no images/documents in templates or media messages yet).
+- The Privacy Policy and Terms are starter drafts. Have them reviewed for your company, and check GST / TDS / invoice rules with your accountant.
+- Meta's prices, tiers and policies change; fill the rate cards from Meta's current official pricing.
+
+## Verification status
+
+When this version was written, the API (108 checks) and the pages (53 checks) were exercised end to end against an
+in-memory PostgreSQL with a mocked Meta API. Those scripts are not part of this repo, and nothing has been tested
+against the live WhatsApp network yet, so run your own test with Meta's test number before real customers.
