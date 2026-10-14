@@ -4,7 +4,7 @@ import { useAuth } from '../auth.jsx';
 import { Field } from '../components/ui.jsx';
 
 export default function ChangePassword({ forced = false }) {
-  const { user, setUser, logout, impersonating } = useAuth();
+  const { user, setUser, logout, impersonating, exitImpersonation } = useAuth();
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
   const [again, setAgain] = useState('');
@@ -44,6 +44,7 @@ export default function ChangePassword({ forced = false }) {
       {done && <div className="ok">Password updated.</div>}
       <button className="btn" disabled={impersonating}>Update password</button>
       {forced && <button type="button" className="btn ghost" onClick={logout}>Logout</button>}
+      {impersonating && <button type="button" className="btn ghost" onClick={exitImpersonation}>Back to my account</button>}
     </form>
   );
   return forced ? <div className="center">{form}</div> : form;

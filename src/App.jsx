@@ -30,7 +30,7 @@ import Wallet from './pages/portal/Wallet.jsx';
 import Configurations from './pages/portal/Configurations.jsx';
 
 export default function App() {
-  const { user, loading, scope, can } = useAuth();
+  const { user, loading, scope, can, impersonating } = useAuth();
   if (loading) return <div className="center muted">Loading...</div>;
   if (!user) {
     return (
@@ -43,7 +43,8 @@ export default function App() {
       </Routes>
     );
   }
-  if (user.must_change_password) return <ChangePassword forced />;
+  // Staff viewing a client's portal must not be stopped by that client's temporary password.
+  if (user.must_change_password && !impersonating) return <ChangePassword forced />;
 
   const r = user.role;
   const clientSide = ['client_admin', 'agent_head', 'agent'].includes(r);
