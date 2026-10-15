@@ -38,6 +38,45 @@ function Connect({ onClose, onDone }) {
   );
 }
 
+const Check = ({ ok, children }) => (
+  <li className={ok ? 'ck ok-ck' : 'ck bad-ck'}>
+    <span className="ck-mark">{ok ? '✓' : '!'}</span>
+    <span>{children}</span>
+  </li>
+);
+
+// Tells the client whether incoming WhatsApp messages can reach this panel.
+function WebhookStatus() {
+  const [d, load, error] = useLoad(() => api('/portal/webhook-status'), []);
+  const ready = d && d.verify_token_set && d.app_secret_set && d.channels_connected > 0;
+  return (
+    <div className="card">
+      <div className="meta-head">
+        <h3>Receiving customer messages</h3>
+        <button className="btn ghost small" onClick={load}>Check again</button>
+      </div>
+      <Err error={error} />
+      {d && (
+        <>
+          <ul className="checks">
+            <Check ok={d.verify_token_set}>Server has the webhook verify token {d.verify_token_set ? '' : '(your platform administrator must set META_VERIFY_TOKEN)'}</Check>
+            <Check ok={d.app_secret_set}>Server has the Meta app secret {d.app_secret_set ? '' : '(your platform administrator must set META_APP_SECRET)'}</Check>
+            <Check ok={d.channels_connected > 0}>A WhatsApp number is connected</Check>
+            <Check ok={d.channels_receiving > 0}>Meta has called the webhook {d.channels_receiving > 0 ? '' : '(send a message to your number to test)'}</Check>
+            <Check ok={!!d.last_inbound_at}>{d.last_inbound_at ? `Last customer message received ${fmtDate(d.last_inbound_at)}` : 'No customer message received yet'}</Check>
+          </ul>
+          {!ready && <p className="muted small">Messages will appear in Team Inbox as soon as every check above is green.</p>}
+          <table><tbody>
+            <tr><td>Callback URL</td><td><code>{origin}{d.callback_path}</code></td></tr>
+            <tr><td>Verify token</td><td>The value of <code>META_VERIFY_TOKEN</code></td></tr>
+            <tr><td>Subscribe to</td><td><code>messages</code></td></tr>
+          </tbody></table>
+        </>
+      )}
+    </div>
+  );
+}
+
 function YourChannel() {
   const [d, load, error] = useLoad(() => api('/portal/channels'), []);
   const [connecting, setConnecting] = useState(false);
@@ -78,15 +117,7 @@ function YourChannel() {
         ))}
       </div>
       {d && !d.channels.length && <Empty>No WhatsApp number connected yet.</Empty>}
-      <div className="card">
-        <h3>Webhook setup</h3>
-        <p className="muted small">In your Meta app (WhatsApp, Configuration), set:</p>
-        <table><tbody>
-          <tr><td>Callback URL</td><td><code>{origin}/api/webhooks/whatsapp</code></td></tr>
-          <tr><td>Verify token</td><td>The value of <code>META_VERIFY_TOKEN</code> set by your platform administrator</td></tr>
-          <tr><td>Subscribe to</td><td><code>messages</code></td></tr>
-        </tbody></table>
-      </div>
+      <WebhookStatus />
       {connecting && <Connect onClose={() => setConnecting(false)} onDone={() => { setConnecting(false); load(); }} />}
     </>
   );

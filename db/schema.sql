@@ -363,3 +363,8 @@ CREATE TABLE IF NOT EXISTS short_links (
   clicks integer NOT NULL DEFAULT 0,
   created_at timestamptz NOT NULL DEFAULT now()
 );
+
+-- ===== Inbound media (photos, voice notes, documents) =====
+ALTER TABLE messages ADD COLUMN IF NOT EXISTS media_id text;
+ALTER TABLE messages ADD COLUMN IF NOT EXISTS media_mime text;
+ALTER TABLE messages ADD COLUMN IF NOT EXISTS media_name text;

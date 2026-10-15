@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from '../../api.js';
 import { useAuth } from '../../auth.jsx';
 import Icon from '../../components/Icon.jsx';
+import MediaView from '../../components/MediaView.jsx';
 import {
   Badge, Err, Field, Modal,
 } from '../../components/ui.jsx';
@@ -237,7 +238,8 @@ export default function Inbox() {
                 <div key={m.id} className={`bubble ${m.direction}`}>
                   {m.direction === 'system' ? <span>{m.body}</span> : (
                     <>
-                      <div className="pre">{m.body}</div>
+                      {m.has_media && <MediaView messageId={m.id} kind={m.kind} name={m.media_name} />}
+                      {!(m.has_media && /^\[.*\]$/.test(m.body || '')) && <div className="pre">{m.body}</div>}
                       <div className="meta">
                         {m.direction === 'note' && 'Internal note · '}
                         {m.direction === 'out' && (m.is_bot ? 'Bot' : m.sender_name) + ' · '}

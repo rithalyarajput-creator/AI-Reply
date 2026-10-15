@@ -355,11 +355,52 @@ async function conversationFor(ctx, id) {
 on('GET', '/portal/conversations/:id', inClient, async (ctx) => {
   const { conv, contact } = await conversationFor(ctx, ctx.params.id);
   const messages = await q(
-    `SELECT id, direction, kind, body, sender_name, is_bot, status, error, created_at FROM messages
+    `SELECT id, direction, kind, body, sender_name, is_bot, status, error, created_at,
+            (media_id IS NOT NULL) AS has_media, media_mime, media_name FROM messages
      WHERE conversation_id = $1 ORDER BY created_at ASC LIMIT 300`, [conv.id]);
   await q('UPDATE conversations SET unread = 0 WHERE id = $1', [conv.id]);
   const windowOpen = !!conv.last_inbound_at && Date.now() - new Date(conv.last_inbound_at).getTime() < 24 * 3600 * 1000;
   return { conversation: { ...conv, unread: 0 }, contact, messages, window_open: windowOpen };
+});
+
+// Streams a customer's photo / file / voice note through the client's own WhatsApp token.
+on('GET', '/portal/messages/:id/media', inClient, async (ctx) => {
+  const c = await portalClient(ctx);
+  need(isUuid(ctx.params.id), 'File not found', 404);
+  const [m] = await q(
+    `SELECT m.media_id, v.agent_id, v.channel_id FROM messages m JOIN conversations v ON v.id = m.conversation_id
+     WHERE m.id = $1 AND m.client_id = $2`, [ctx.params.id, c.id]);
+  need(m && m.media_id, 'File not found', 404);
+  need(ctx.user.role !== 'agent' || m.agent_id === ctx.user.id, 'Not allowed', 403);
+  const channel = await connectedChannel(c.id, m.channel_id);
+  need(channel, 'Connect your WhatsApp number to open files', 409);
+  let file;
+  try { file = await meta.fetchMedia(channel, m.media_id); } catch (e) { need(false, e.message, 502); }
+  ctx.res.statusCode = 200;
+  ctx.res.setHeader('Content-Type', file.mime);
+  ctx.res.setHeader('Content-Disposition', 'inline');
+  ctx.res.setHeader('X-Content-Type-Options', 'nosniff');
+  ctx.res.setHeader('Cache-Control', 'private, max-age=300');
+  ctx.res.end(file.buffer);
+  return undefined;
+});
+
+// Is the server ready to receive WhatsApp messages? Shown on Integrations.
+on('GET', '/portal/webhook-status', inClient, async (ctx) => {
+  const c = await portalClient(ctx);
+  const [last] = await q(
+    `SELECT max(created_at) AS at FROM messages WHERE client_id = $1 AND direction = 'in'`, [c.id]);
+  const [ch] = await q(
+    `SELECT count(*) FILTER (WHERE status = 'connected')::int AS connected,
+            count(*) FILTER (WHERE webhook_ok)::int AS receiving FROM channels WHERE client_id = $1`, [c.id]);
+  return {
+    verify_token_set: !!process.env.META_VERIFY_TOKEN,
+    app_secret_set: !!process.env.META_APP_SECRET,
+    callback_path: '/api/webhooks/whatsapp',
+    channels_connected: ch.connected,
+    channels_receiving: ch.receiving,
+    last_inbound_at: last.at,
+  };
 });
 
 on('POST', '/portal/conversations/:id/messages', inClient, async (ctx) => {

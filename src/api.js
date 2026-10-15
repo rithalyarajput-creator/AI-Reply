@@ -42,6 +42,19 @@ export async function api(path, { method = 'GET', body, query } = {}) {
   return data;
 }
 
+// Fetches a protected file (needs the login token, so it cannot be a plain <img src>).
+export async function apiBlob(path) {
+  const scope = getScope();
+  const qs = scope && path.startsWith('/portal') ? `?client_id=${encodeURIComponent(scope.id)}` : '';
+  const res = await fetch(`/api${path}${qs}`, { headers: getToken() ? { Authorization: `Bearer ${getToken()}` } : {} });
+  if (!res.ok) {
+    let msg = `Could not load the file (${res.status})`;
+    try { msg = (await res.json()).error || msg; } catch { /* not json */ }
+    throw new Error(msg);
+  }
+  return { blob: await res.blob(), type: res.headers.get('content-type') || '' };
+}
+
 export function downloadCsv(filename, rows) {
   const esc = (v) => {
     let s = v === null || v === undefined ? '' : String(v);

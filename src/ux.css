@@ -185,3 +185,13 @@
   .site-nav .dd-panel { display: block; position: static; box-shadow: none; border: 0; padding: 0 0 0 12px; }
   .site-nav .nav-in { position: relative; }
 }
+
+/* ---- media + webhook readiness ---- */
+.media-box { padding: 6px 0; }
+.media-img { max-width: 260px; max-height: 260px; border-radius: 10px; display: block; margin-bottom: 4px; }
+.media-audio { max-width: 260px; display: block; margin-bottom: 4px; }
+.checks { list-style: none; padding: 0; margin: 8px 0; display: flex; flex-direction: column; gap: 6px; }
+.ck { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; }
+.ck-mark { width: 20px; height: 20px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+.ok-ck .ck-mark { background: #C2EDCE; color: #1d4d3a; }
+.bad-ck .ck-mark { background: #fee2e2; color: #991b1b; }

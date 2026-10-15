@@ -79,7 +79,25 @@ function extractInbound(m) {
     return { kind: 'text', text: r?.title, buttonId: r?.id };
   }
   if (m.type === 'button') return { kind: 'text', text: m.button?.text, buttonId: m.button?.payload };
-  return { kind: m.type || 'message', text: m[m.type]?.caption || `[${m.type}]` };
+  if (['image', 'video', 'audio', 'document', 'sticker'].includes(m.type)) {
+    const x = m[m.type] || {};
+    const label = { image: 'Photo', video: 'Video', audio: 'Voice / audio', document: 'Document', sticker: 'Sticker' }[m.type];
+    return {
+      kind: m.type, text: x.caption || (m.type === 'document' && x.filename ? x.filename : `[${label}]`),
+      mediaId: x.id, mediaMime: x.mime_type, mediaName: x.filename,
+    };
+  }
+  if (m.type === 'location') {
+    const l = m.location || {};
+    const maps = l.latitude !== undefined ? `https://maps.google.com/?q=${l.latitude},${l.longitude}` : '';
+    return { kind: 'location', text: `Location: ${[l.name, l.address].filter(Boolean).join(', ') || 'shared a location'} ${maps}`.trim() };
+  }
+  if (m.type === 'contacts') {
+    const list = (m.contacts || []).map((c) => `${c.name?.formatted_name || 'Contact'} ${c.phones?.[0]?.phone || ''}`.trim());
+    return { kind: 'contacts', text: `Shared contact: ${list.join('; ') || 'contact card'}` };
+  }
+  if (m.type === 'reaction') return { kind: 'reaction', text: `Reacted ${m.reaction?.emoji || ''}`.trim(), skip: true };
+  return { kind: m.type || 'message', text: m[m.type]?.caption || `[${m.type || 'message'}]` };
 }
 
 async function notifyWebhook(clientId, payload) {
@@ -110,6 +128,7 @@ on('POST', '/webhooks/whatsapp', null, async ({ raw, req, body, res }) => {
       for (const m of v.messages || []) {
         try {
           const inb = extractInbound(m);
+          if (inb.skip) continue; // reactions are not conversation messages
           await processInbound(channel, { from: m.from, name: names[m.from], waId: m.id, ...inb });
           await notifyWebhook(channel.client_id, { event: 'message', from: m.from, text: inb.text, id: m.id });
         } catch (e) { console.error('inbound error', e.message); }
